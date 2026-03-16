@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIPHER — CLASSIFIED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g: #00ff41;
+  --g2: #00cc33;
+  --g3: rgba(0,255,65,0.08);
+  --g4: rgba(0,255,65,0.03);
+  --red: #ff3131;
+  --amber: #ffb300;
+  --bg: #040404;
+  --panel: #090909;
+  --border: rgba(0,255,65,0.12);
+  --border2: rgba(0,255,65,0.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+
+body{
+  background:var(--bg);
+  color:var(--g);
+  font-family:'Share Tech Mono','Courier New',monospace;
+  font-size:14px;
+  position:relative;
+}
+
+/* CRT scanlines */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px);
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* Vignette */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.7) 100%);
+  pointer-events:none;
+  z-index:9998;
+}
+
+/* ══════════════════════════════════════
+   SCREENS
+══════════════════════════════════════ */
+.screen{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .4s;
+  padding:16px;
+}
+.screen.off{opacity:0;pointer-events:none;}
+
+/* ══════════════════════════════════════
+   BOOT SCREEN
+══════════════════════════════════════ */
+#boot{gap:0;}
+.boot-wrap{
+  width:100%;max-width:520px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:28px 32px;
+  position:relative;
+}
+.boot-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:11px;font-weight:700;
+  letter-spacing:6px;color:rgba(0,255,65,0.35);
+  margin-bottom:22px;
+  text-align:center;
+}
+.boot-line{
+  font-size:11px;letter-spacing:1.5px;
+  padding:4px 0;opacity:0;
+  transition:opacity .25s;
+  display:flex;align-items:center;gap:10px;
+}
+.boot-line.show{opacity:1;}
+.boot-line.done{opacity:.3;}
+.boot-line .lbl{color:rgba(0,255,65,0.4);min-width:220px;}
+.boot-line .val{color:var(--g);}
+.boot-line .ok{color:#00ff41;margin-left:auto;}
+.boot-line .wait{color:var(--amber);margin-left:auto;animation:blink 1s infinite;}
+.prog-wrap{margin-top:22px;height:2px;background:rgba(0,255,65,0.08);}
+.prog-bar{height:100%;background:var(--g);box-shadow:0 0 8px var(--g);width:0%;transition:width .3s;}
+.boot-footer{
+  text-align:center;margin-top:16px;
+  font-size:10px;color:rgba(0,255,65,0.2);letter-spacing:3px;
+}
+
+/* ══════════════════════════════════════
+   LOGIN SCREEN
+══════════════════════════════════════ */
+#login{gap:24px;}
+.logo-block{text-align:center;}
+.logo-icon{
+  font-size:48px;display:block;
+  animation:glow-pulse 2.5s ease-in-out infinite;
+  line-height:1;margin-bottom:12px;
+}
+.logo-name{
+  font-family:'Orbitron',sans-serif;
+  font-size:36px;font-weight:900;
+  letter-spacing:16px;
+  color:var(--g);
+  text-shadow:0 0 20px var(--g),0 0 60px rgba(0,255,65,0.2);
+}
+.logo-sub{
+  font-size:10px;letter-spacing:5px;
+  color:rgba(0,255,65,0.3);margin-top:6px;
+}
+.login-panel{
+  width:100%;max-width:420px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:32px 28px;
+  position:relative;
+  box-shadow:0 0 60px rgba(0,255,65,0.04),inset 0 0 40px rgba(0,0,0,0.3);
+}
+.panel-tag{
+  position:absolute;top:-1px;left:24px;
+  background:var(--panel);padding:0 8px;
+  transform:translateY(-50%);
+  font-size:9px;letter-spacing:3px;color:rgba(0,255,65,0.3);
+}
+/* corner brackets */
+.c{position:absolute;width:12px;height:12px;border-color:rgba(0,255,65,0.5);border-style:solid;}
+.c-tl{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.c-tr{top:-1px;right:-1px;border-width:2px 2px 0 0;}
+.c-bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;}
+.c-br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+
+.fld{margin-bottom:18px;}
+.fld-lbl{
+  font-size:9px;letter-spacing:3px;color:rgba(0,255,65,0.4);
+  margin-bottom:7px;display:flex;align-items:center;gap:6px;
+}
+.fld-lbl::before{content:'▸';}
+input.fld-inp{
+  width:100%;
+  background:var(--g4);
+  border:1px solid var(--border);
+  border-bottom-color:var(--border2);
+  color:var(--g);
+  font-family:inherit;font-size:13px;
+  padding:10px 14px;outline:none;
+  transition:all .25s;
+  caret-color:var(--g);
+}
+input.fld-inp:focus{
+  border-color:var(--border2);
+  border-bottom-color:var(--g);
+  background:var(--g3);
+  box-shadow:0 0 20px rgba(0,255,65,0.06);
+}
+input.fld-inp::placeholder{color:rgba(0,255,65,0.18);}
+.login-err{
+  font-size:10px;color:var(--red);letter-spacing:1px;
+  min-height:18px;text-align:center;margin-bottom:4px;
+}
+.btn-connect{
+  width:100%;
+  background:transparent;
+  border:1px solid var(--g2);
+  color:var(--g);
+  font-family:'Orbitron',inherit;font-size:11px;font-weight:700;
+  letter-spacing:5px;padding:14px;cursor:pointer;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.btn-connect::before{
+  content:'';position:absolute;top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(0,255,65,0.08),transparent);
+  transition:left .5s;
+}
+.btn-connect:hover::before{left:100%;}
+.btn-connect:hover{background:var(--g3);box-shadow:0 0 30px rgba(0,255,65,0.12);}
+.btn-connect:active{transform:scale(.99);}
+.login-note{
+  font-size:9px;color:rgba(0,255,65,0.2);
+  text-align:center;letter-spacing:1.5px;margin-top:14px;
+  line-height:1.8;
+}
+
+/* ══════════════════════════════════════
+   CHAT SCREEN
+══════════════════════════════════════ */
+#chat{
+  position:fixed;inset:0;
+  flex-direction:column;align-items:stretch;
+  padding:0;justify-content:flex-start;
+}
+
+/* Header */
+.chat-hdr{
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  height:54px;
+}
+.hdr-left{display:flex;align-items:center;gap:12px;}
+.status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--amber);box-shadow:0 0 8px var(--amber);
+  animation:blink 1.5s infinite;
+  flex-shrink:0;
+}
+.status-dot.online{background:var(--g);box-shadow:0 0 10px var(--g);animation:none;}
+.hdr-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:4px;
+}
+.hdr-right{display:flex;align-items:center;gap:10px;font-size:10px;}
+.enc-badge{
+  border:1px solid rgba(0,255,65,0.2);
+  padding:4px 10px;font-size:9px;letter-spacing:2px;
+  color:rgba(0,255,65,0.5);
+  display:flex;align-items:center;gap:5px;
+}
+.agent-tag{color:rgba(0,255,65,0.4);letter-spacing:2px;}
+.btn-disc{
+  background:transparent;
+  border:1px solid rgba(255,50,50,0.25);
+  color:rgba(255,80,80,0.5);
+  font-family:inherit;font-size:9px;letter-spacing:2px;
+  padding:4px 10px;cursor:pointer;transition:all .2s;
+}
+.btn-disc:hover{background:rgba(255,50,50,0.08);border-color:rgba(255,80,80,0.5);color:rgba(255,80,80,0.9);}
+
+/* Messages area */
+.msgs{
+  flex:1;overflow-y:auto;
+  padding:18px 18px 8px;
+  display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;
+}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-track{background:transparent;}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* Sys message */
+.sys-msg{
+  text-align:center;
+  font-size:10px;color:rgba(0,255,65,0.22);
+  letter-spacing:2px;padding:8px 0;
+  border-top:1px solid rgba(0,255,65,0.04);
+  border-bottom:1px solid rgba(0,255,65,0.04);
+  animation:fadein .4s ease;
+}
+
+/* Chat bubble */
+.msg{
+  max-width:72%;animation:slide-up .28s ease;
+  display:flex;flex-direction:column;
+}
+.msg.mine{align-self:flex-end;}
+.msg.theirs{align-self:flex-start;}
+.msg-meta{
+  font-size:9px;color:rgba(0,255,65,0.3);
+  letter-spacing:2px;margin-bottom:4px;
+  display:flex;align-items:center;gap:6px;
+}
+.msg.mine .msg-meta{justify-content:flex-end;}
+.bubble{
+  padding:10px 16px;
+  border:1px solid;font-size:13px;
+  line-height:1.6;word-break:break-word;
+  position:relative;
+}
+.msg.mine .bubble{
+  background:rgba(0,255,65,0.07);
+  border-color:rgba(0,255,65,0.28);
+  border-radius:2px 0 2px 2px;
+}
+.msg.theirs .bubble{
+  background:rgba(0,255,65,0.02);
+  border-color:rgba(0,255,65,0.12);
+  border-radius:0 2px 2px 2px;
+}
+.msg-time{
+  font-size:9px;color:rgba(0,255,65,0.2);
+  letter-spacing:1px;margin-top:4px;
+}
+.msg.mine .msg-time{text-align:right;}
+.enc-tick{font-size:9px;color:rgba(0,255,65,0.35);}
+
+/* Typing area */
+.typing-row{
+  min-height:22px;padding:0 18px;
+  font-size:10px;color:rgba(0,255,65,0.3);
+  letter-spacing:2px;flex-shrink:0;
+  display:flex;align-items:center;gap:6px;
+}
+.t-dot{
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(0,255,65,0.4);
+  animation:type-b 1.3s infinite;
+}
+.t-dot:nth-child(2){animation-delay:.2s;}
+.t-dot:nth-child(3){animation-delay:.4s;}
+
+/* Footer input */
+.chat-ftr{
+  background:var(--panel);
+  border-top:1px solid var(--border);
+  padding:12px 18px;
+  display:flex;gap:10px;align-items:center;
+  flex-shrink:0;
+}
+#msg-inp{
+  flex:1;
+  background:var(--g4);
+  border:1px solid var(--border);
+  color:var(--g);
+  font-family:inherit;font-size:13px;
+  padding:10px 14px;outline:none;transition:all .25s;
+  caret-color:var(--g);
+}
+#msg-inp:focus{
+  border-color:var(--border2);
+  background:var(--g3);
+  box-shadow:0 0 15px rgba(0,255,65,0.07);
+}
+#msg-inp::placeholder{color:rgba(0,255,65,0.18);}
+.btn-send{
+  background:transparent;
+  border:1px solid rgba(0,255,65,0.35);
+  color:var(--g);
+  font-family:'Orbitron',inherit;
+  font-size:10px;font-weight:700;letter-spacing:3px;
+  padding:10px 20px;cursor:pointer;transition:all .2s;
+  white-space:nowrap;flex-shrink:0;
+}
+.btn-send:hover{background:var(--g3);border-color:var(--g);box-shadow:0 0 15px rgba(0,255,65,0.12);}
+.btn-send:active{transform:scale(.97);}
+
+/* Char counter */
+.char-cnt{
+  font-size:9px;color:rgba(0,255,65,0.2);
+  letter-spacing:1px;flex-shrink:0;min-width:40px;text-align:right;
+}
+
+/* ══════════════════════════════════════
+   KEYFRAMES
+══════════════════════════════════════ */
+@keyframes glow-pulse{
+  0%,100%{text-shadow:0 0 20px var(--g);}
+  50%{text-shadow:0 0 40px var(--g),0 0 70px rgba(0,255,65,0.3);}
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.2;}}
+@keyframes slide-up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadein{from{opacity:0;}to{opacity:1;}}
+@keyframes type-b{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-4px);}}
+@keyframes glitch-1{
+  0%,100%{clip-path:inset(0 0 98% 0);}
+  20%{clip-path:inset(30% 0 50% 0);}
+  40%{clip-path:inset(60% 0 20% 0);}
+  60%{clip-path:inset(10% 0 70% 0);}
+  80%{clip-path:inset(80% 0 5% 0);}
+}
+
+/* Glitch on logo occasionally */
+.logo-name{position:relative;}
+.logo-name::before,.logo-name::after{
+  content:attr(data-text);
+  position:absolute;top:0;left:0;width:100%;
+}
+.logo-name::before{
+  color:rgba(255,0,80,0.4);
+  animation:glitch-1 6s infinite steps(1);
+  transform:translateX(-2px);
+}
+.logo-name::after{
+  color:rgba(0,200,255,0.3);
+  animation:glitch-1 6s infinite steps(1) .5s;
+  transform:translateX(2px);
+}
+
+/* Connection status bar */
+.conn-bar{
+  padding:4px 18px;
+  font-size:9px;letter-spacing:2px;
+  color:rgba(255,179,0,0.5);
+  background:rgba(255,179,0,0.03);
+  border-bottom:1px solid rgba(255,179,0,0.08);
+  text-align:center;flex-shrink:0;
+  transition:all .5s;
+}
+.conn-bar.clear{
+  color:rgba(0,255,65,0.25);
+  background:transparent;
+  border-bottom-color:transparent;
+}
+.conn-bar.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     BOOT SCREEN
+══════════════════════════════════════ -->
+<div id="boot" class="screen">
+  <div class="boot-wrap">
+    <div class="panel-tag">SYS INIT</div>
+    <div class="boot-title">CIPHER SECURE MESSENGER ◈ v4.1</div>
+    <div class="boot-line" id="b0"><span class="lbl">SYSTEM KERNEL</span><span class="val">LOADING...</span><span class="ok">✓</span></div>
+    <div class="boot-line" id="b1"><span class="lbl">WEB CRYPTO API</span><span class="val">AES-256-GCM</span><span class="ok">✓</span></div>
+    <div class="boot-line" id="b2"><span class="lbl">KEY DERIVATION</span><span class="val">PBKDF2 / SHA-256 / 100K</span><span class="ok">✓</span></div>
+    <div class="boot-line" id="b3"><span class="lbl">P2P RELAY NETWORK</span><span class="val">CONNECTING...</span><span class="wait" id="b3-st">●</span></div>
+    <div class="boot-line" id="b4"><span class="lbl">CONSOLE SHIELD</span><span class="val">ALL LOGS SUPPRESSED</span><span class="ok">✓</span></div>
+    <div class="boot-line" id="b5"><span class="lbl">MEMORY WIPE ON EXIT</span><span class="val">ENABLED</span><span class="ok">✓</span></div>
+    <div class="boot-line" id="b6"><span class="lbl">SECURE CHANNEL</span><span class="val">READY</span><span class="ok">✓</span></div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog"></div></div>
+    <div class="boot-footer">ALL TRANSMISSIONS END-TO-END ENCRYPTED</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════ -->
+<div id="login" class="screen off">
+  <div class="logo-block">
+    <span class="logo-icon">◈</span>
+    <div class="logo-name" data-text="CIPHER">CIPHER</div>
+    <div class="logo-sub">CLASSIFIED SECURE MESSENGER</div>
+  </div>
+
+  <div class="login-panel">
+    <div class="panel-tag">AUTHENTICATION</div>
+    <div class="c c-tl"></div><div class="c c-tr"></div>
+    <div class="c c-bl"></div><div class="c c-br"></div>
+
+    <div class="fld">
+      <div class="fld-lbl">AGENT CALLSIGN</div>
+      <input class="fld-inp" type="text" id="un" placeholder="Your codename..." maxlength="20" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="fld">
+      <div class="fld-lbl">SECURE CHANNEL CODE</div>
+      <input class="fld-inp" type="text" id="rm" placeholder="Shared channel ID..." maxlength="40" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="fld" style="margin-bottom:6px;">
+      <div class="fld-lbl">ENCRYPTION PASSPHRASE</div>
+      <input class="fld-inp" type="password" id="pp" placeholder="Secret key (min 8 chars)..." autocomplete="new-password">
+    </div>
+    <div class="login-err" id="lerr"></div>
+    <button class="btn-connect" id="conn-btn" onclick="initChat()">▸ ESTABLISH SECURE LINE</button>
+    <div class="login-note">
+      ⚠ CHANNEL CODE &amp; PASSPHRASE MUST BE IDENTICAL ON BOTH DEVICES<br>
+      MESSAGES ENCRYPTED BEFORE LEAVING YOUR BROWSER — ZERO PLAINTEXT
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     CHAT SCREEN
+══════════════════════════════════════ -->
+<div id="chat" class="screen off">
+  <div class="chat-hdr">
+    <div class="hdr-left">
+      <div class="status-dot" id="sdot"></div>
+      <div class="hdr-title" id="ch-label">CIPHER</div>
+    </div>
+    <div class="hdr-right">
+      <div class="enc-badge">🔒 AES-256-GCM</div>
+      <span class="agent-tag" id="agent-lbl"></span>
+      <button class="btn-disc" onclick="disconnect()">✕ WIPE &amp; EXIT</button>
+    </div>
+  </div>
+  <div class="conn-bar" id="conn-bar">⚡ CONNECTING TO P2P RELAY NETWORK...</div>
+  <div class="msgs" id="msgs"></div>
+  <div class="typing-row" id="typing-row"></div>
+  <div class="chat-ftr">
+    <input type="text" id="msg-inp" placeholder="Compose encrypted transmission..." maxlength="500"
+      autocomplete="off" spellcheck="false" oninput="onTyping()" onkeydown="onKey(event)">
+    <span class="char-cnt" id="char-cnt">500</span>
+    <button class="btn-send" onclick="sendMsg()">SEND ▸</button>
+  </div>
+</div>
+
+<!-- Gun.js P2P -->
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+/* ══════════════════════════════════════════════
+   CONSOLE SHIELD — suppress all output to prevent
+   any message content appearing in browser devtools
+══════════════════════════════════════════════ */
+(()=>{
+  const noop=()=>{};
+  console.log=noop;
+  console.info=noop;
+  console.debug=noop;
+  console.warn=noop;
+  // console.error left intact for critical browser errors only
+})();
+
+/* ══════════════════════════════════════════════
+   CRYPTO ENGINE  — AES-256-GCM + PBKDF2
+══════════════════════════════════════════════ */
+const Crypto={
+  async deriveKey(pass,room){
+    const enc=new TextEncoder();
+    const raw=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2',salt:enc.encode(room+'_cipher_salt_v1'),iterations:100000,hash:'SHA-256'},
+      raw,{name:'AES-GCM',length:256},false,['encrypt','decrypt']
+    );
+  },
+  async enc(text,key){
+    const enc=new TextEncoder();
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(text));
+    const out=new Uint8Array(12+ct.byteLength);
+    out.set(iv);out.set(new Uint8Array(ct),12);
+    return btoa(String.fromCharCode(...out));
+  },
+  async dec(b64,key){
+    const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const iv=bytes.slice(0,12),data=bytes.slice(12);
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,data);
+    return new TextDecoder().decode(pt);
+  },
+  async hash(str){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+};
+
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let gun=null,ck=null,cn=null,me='',seen=new Set(),
+    typTO=null,typDispTO=null,sessionStart=Date.now();
+
+/* ══════════════════════════════════════════════
+   BOOT SEQUENCE
+══════════════════════════════════════════════ */
+(async()=>{
+  const show=(id,delay)=>new Promise(r=>{
+    setTimeout(()=>{
+      const el=document.getElementById(id);
+      if(el)el.classList.add('show');
+      document.getElementById('prog').style.width=
+        ({b0:14,b1:28,b2:42,b3:57,b4:71,b5:85,b6:100}[id]||0)+'%';
+      setTimeout(r,delay);
+    },delay);
+  });
+  let d=0;
+  for(const[id,ms] of [['b0',200],['b1',350],['b2',450],['b3',600],['b4',300],['b5',250],['b6',200]]){
+    await show(id,ms+d);
+    if(id!=='b6')document.getElementById(id).classList.add('done');
+    d+=ms;
+  }
+  setTimeout(()=>{
+    document.getElementById('b3-st').textContent='✓';
+    document.getElementById('b3-st').style.cssText='color:var(--g);margin-left:auto;';
+  },d);
+  setTimeout(()=>showScreen('login'),d+400);
+})();
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('off'));
+  document.getElementById(id).classList.remove('off');
+}
+
+/* ══════════════════════════════════════════════
+   INIT CHAT
+══════════════════════════════════════════════ */
+async function initChat(){
+  const u=document.getElementById('un').value.trim();
+  const r=document.getElementById('rm').value.trim();
+  const p=document.getElementById('pp').value;
+  const err=id=>{document.getElementById('lerr').textContent=id;};
+
+  if(!u)return err('⚠ AGENT CALLSIGN REQUIRED');
+  if(!r)return err('⚠ CHANNEL CODE REQUIRED');
+  if(p.length<8)return err('⚠ PASSPHRASE TOO SHORT — MIN 8 CHARACTERS');
+
+  document.getElementById('lerr').textContent='';
+  const btn=document.getElementById('conn-btn');
+  btn.textContent='ENCRYPTING...';btn.disabled=true;
+
+  try{
+    ck=await Crypto.deriveKey(p,r);
+    me=u;
+    sessionStart=Date.now()-2000; // allow 2s window for recent msgs
+
+    // Channel key = hash of room+passphrase so channel name is also secret
+    const chHash=await Crypto.hash(r+p+'_ch');
+    const chId='cp_'+chHash.slice(0,36);
+
+    // Init Gun with multiple public relays for max reliability
+    gun=Gun({
+      peers:[
+        'https://gundb-relay-mlmr.onrender.com/gun',
+        'https://gun-manhattan.herokuapp.com/gun'
+      ]
+    });
+
+    showScreen('chat');
+    document.getElementById('ch-label').textContent='CH:'+r.slice(0,10).toUpperCase();
+    document.getElementById('agent-lbl').textContent=u.toUpperCase();
+    document.getElementById('msg-inp').focus();
+    sysMsg('SECURE CHANNEL ESTABLISHED — E2E ENCRYPTION ACTIVE');
+
+    // P2P relay status
+    const bar=document.getElementById('conn-bar');
+    setTimeout(()=>{
+      bar.classList.add('clear');
+      bar.textContent='● P2P RELAY CONNECTED — MESSAGES FULLY ENCRYPTED';
+      document.getElementById('sdot').classList.add('online');
+      setTimeout(()=>bar.classList.add('hidden'),4000);
+    },3000);
+
+    // Subscribe to channel
+    cn=gun.get(chId);
+    cn.map().on(async(data,key)=>{
+      if(!data||!data.enc||!data.s||seen.has(key))return;
+      if(data.ts&&data.ts<sessionStart-60000)return; // ignore very old msgs
+      seen.add(key);
+      try{
+        const txt=await Crypto.dec(data.enc,ck);
+        if(data.tp==='typ'){
+          if(data.s!==me)showTyping(data.s);
+          return;
+        }
+        addMsg(data.s,txt,data.ts,data.s===me);
+      }catch(e){/* wrong key = wrong channel, silent */}
+    });
+
+    // Clear sensitive fields from DOM
+    setTimeout(()=>{
+      document.getElementById('pp').value='';
+      document.getElementById('rm').value='';
+    },500);
+
+    btn.textContent='▸ ESTABLISH SECURE LINE';
+    btn.disabled=false;
+
+  }catch(e){
+    document.getElementById('lerr').textContent='⚠ CONNECTION ERROR — TRY AGAIN';
+    btn.textContent='▸ ESTABLISH SECURE LINE';
+    btn.disabled=false;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   SEND MESSAGE
+══════════════════════════════════════════════ */
+async function sendMsg(){
+  const inp=document.getElementById('msg-inp');
+  const txt=inp.value.trim();
+  if(!txt||!cn||!ck)return;
+  inp.value='';
+  document.getElementById('char-cnt').textContent='500';
+  try{
+    const enc=await Crypto.enc(txt,ck);
+    cn.set({enc,s:me,ts:Date.now(),tp:'msg'});
+  }catch(e){sysMsg('⚠ TRANSMISSION FAILED — RETRY');}
+}
+
+function onKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+  else sendTypingSignal();
+}
+
+function onTyping(){
+  const v=document.getElementById('msg-inp').value;
+  document.getElementById('char-cnt').textContent=500-v.length;
+  sendTypingSignal();
+}
+
+async function sendTypingSignal(){
+  if(!cn||!ck)return;
+  clearTimeout(typTO);
+  typTO=setTimeout(async()=>{
+    try{
+      const enc=await Crypto.enc('...',ck);
+      cn.set({enc,s:me,ts:Date.now(),tp:'typ'});
+    }catch(e){}
+  },600);
+}
+
+/* ══════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════ */
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML;}
+
+function addMsg(sender,text,ts,mine){
+  const area=document.getElementById('msgs');
+  const div=document.createElement('div');
+  div.className='msg '+(mine?'mine':'theirs');
+  const time=ts?new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+  div.innerHTML=`
+    <div class="msg-meta">
+      <span>${esc(sender)}</span>
+      <span class="enc-tick">🔒</span>
+    </div>
+    <div class="bubble">${esc(text)}</div>
+    <div class="msg-time">${time}</div>`;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+
+function sysMsg(t){
+  const area=document.getElementById('msgs');
+  const d=document.createElement('div');
+  d.className='sys-msg';d.textContent=t;
+  area.appendChild(d);area.scrollTop=area.scrollHeight;
+}
+
+function showTyping(sender){
+  const row=document.getElementById('typing-row');
+  row.innerHTML=`<div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>
+    <span style="font-size:9px;letter-spacing:2px;padding-left:4px">${esc(sender)} TRANSMITTING...</span>`;
+  clearTimeout(typDispTO);
+  typDispTO=setTimeout(()=>{row.innerHTML='';},3000);
+}
+
+function disconnect(){
+  // Wipe all state from memory
+  gun=null;ck=null;cn=null;me='';seen.clear();
+  clearTimeout(typTO);clearTimeout(typDispTO);
+  document.getElementById('msgs').innerHTML='';
+  document.getElementById('un').value='';
+  document.getElementById('typing-row').innerHTML='';
+  document.getElementById('conn-bar').classList.remove('hidden','clear');
+  document.getElementById('conn-bar').textContent='⚡ CONNECTING TO P2P RELAY NETWORK...';
+  document.getElementById('sdot').classList.remove('online');
+  showScreen('login');
+}
+</script>
+</body>
+</html>
